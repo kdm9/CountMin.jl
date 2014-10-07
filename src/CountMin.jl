@@ -1,15 +1,15 @@
 module CountMin
 
-import Base: read!, write
-
-export getprimesabove,
+export CountMinSketch,
+       getprimesabove,
        getprimesbelow,
-       CountMinSketch,
        add!,
-       retrieve,
+       contains,
        collisionrate,
        write,
        read!
+
+import Base: read!, write, add!, contains
 
 const CMSMAGIC = b"cms\x00jl\x09\x01"
 const SIZES = [Uint8, Uint16, None, Uint32, None, None, None, Uint64]
@@ -68,7 +68,7 @@ type CountMinSketch{T <: Unsigned}
     end
 end
 
-function insert!(cms::CountMinSketch, item)
+function add!(cms::CountMinSketch, item)
     item = uint64(item)
     for i in 1:cms.tables
         offset = item % cms.moduli[i] + 1
@@ -76,7 +76,7 @@ function insert!(cms::CountMinSketch, item)
     end
 end
 
-function retrieve(cms::CountMinSketch, item)
+function contains(cms::CountMinSketch, item)
     item = uint64(item)
     min = 0
     for i in 1:cms.tables
