@@ -1,0 +1,8 @@
+
+tags
+*.cov
+
+# editor temps
+*~
+*.bak
+*.sw[op]
