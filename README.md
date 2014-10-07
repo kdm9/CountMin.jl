@@ -18,14 +18,14 @@ a fairly full description of the API.
 
 The API tries to follow the Julia standard method names.
 
-   # make a CMS with 4 tables of ~1000 cells
-   # Each cell will be a Uint8, so can count to 255. You can use any unsigned
-   # type as the cell type.
-   cms = CountMinSketch{Uint8}(4, 1000)
-   # add the hash value of something
-   add!(cms, hash("Hello"))
-   assert(contains(cms, hash("Hello")) == 1)
-   add!(cms, hash("Hello"))
-   add!(cms, hash("Hello"))
-   add!(cms, hash("Hello"))
-   assert(contains(cms, hash("Hello")) == 4)
+    # make a CMS with 4 tables of ~1000 cells
+    # Each cell will be a Uint8, so can count to 255. You can use any unsigned
+    # type as the cell type.
+    cms = CountMinSketch{Uint8}(4, 1000)
+    # add the hash value of something
+    add!(cms, hash("Hello"))
+    assert(contains(cms, hash("Hello")) == 1)
+    add!(cms, hash("Hello"))
+    add!(cms, hash("Hello"))
+    add!(cms, hash("Hello"))
+    assert(contains(cms, hash("Hello")) == 4)
