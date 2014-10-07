@@ -1,8 +1,7 @@
 CountMin.jl
 ===========
 
-[![Build Status](https://travis-ci.org/kdmurray91/CountMinSketch.jl.svg?branch=master)](https://travis-ci.org/kdmurray91/CountMinSketch.jl)
-
+[![Build Status](https://travis-ci.org/kdmurray91/CountMin.jl.svg?branch=master)](https://travis-ci.org/kdmurray91/CountMin.jl)
 
 A count-min-sketch implementation for Julia. See
 [Wikipedia](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) or the
