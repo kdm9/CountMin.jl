@@ -53,7 +53,17 @@ end
 function add!(cms::CountMinSketch, item, count)
     for i in 1:cms.tables
         offset = hash(item, hash(i)) % cms.tablesize + 1
-        cms.sketch[i, offset] += count
+        try
+            cms.sketch[i, offset] += count
+        catch InexactError
+            # clamp overflow to typemin/typemax(eltype(sketch))
+            if count > 0
+                newval = typemax(eltype(cms))
+            else
+                newval = typemin(eltype(cms))
+            end
+            cms.sketch[i, offset] = newval
+        end
     end
 end
 
@@ -63,18 +73,6 @@ function getindex(cms::CountMinSketch, item)
         offset = hash(item, hash(i)) % cms.tablesize + 1
         val = cms.sketch[i, offset]
         if val < min
-            min = val
-        end
-    end
-    return min
-end
-
-function setindex!(cms::CountMinSketch, item, value::Integer)
-    min = Inf
-    for i in 1:cms.tables
-        offset = item % cms.tablesize + 1
-        val = cms.sketch[i, offset]
-        if val > min
             min = val
         end
     end
