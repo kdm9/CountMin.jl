@@ -1,88 +1,92 @@
 module TestCountMin
 
-using FactCheck
 using CountMin
 
-facts("getprimes") do
-    a = getprimesabove(2, 1)
-    @fact a --> [3,]
-    @fact length(a) --> 1
-    @fact all(map(isprime, a)) --> true
-
-    a = getprimesabove(200, 2)
-    @fact a --> [211, 223]
-    @fact length(a) --> 2
-    @fact all(map(isprime, a)) --> true
-
-    b = getprimesbelow(10, 1)
-    @fact b --> [7, ]
-    @fact length(b) --> 1
-    @fact all(map(isprime, b)) --> true
-
-    b = getprimesbelow(200, 2)
-    @fact b --> [199, 197]
-    @fact length(b) --> 2
-    @fact all(map(isprime, b)) --> true
+if VERSION >= v"0.5-"
+    using Base.Test
+else
+    using BaseTestNext
+    const Test = BaseTestNext
 end
 
-facts("CountMinSketch empty constructor") do
-    cms = CountMinSketch{UInt16}()
-    @fact eltype(cms.sketch) --> UInt16
-    @fact cms.sketch --> zeros(UInt16, 0, 0)
-    @fact cms.moduli --> zeros(UInt64, 0)
 
-    cms = CountMinSketch{UInt8}()
-    @fact eltype(cms.sketch) --> UInt8
-    @fact cms.sketch --> zeros(UInt8, 0, 0)
-    @fact cms.moduli --> zeros(UInt64, 0)
+@testset "CountMinSketch Basic Operations" begin
+    @testset "CountMinSketch empty constructor" begin
+        cms = CountMinSketch{UInt16}()
+        @test eltype(cms.sketch) == UInt16
+        @test cms.sketch == zeros(UInt16, 0, 0)
+        @test cms.tables == 0
+        @test cms.tablesize == 0
+
+        cms = CountMinSketch{UInt8}()
+        @test eltype(cms.sketch) == UInt8
+        @test cms.sketch == zeros(UInt8, 0, 0)
+        @test cms.tables == 0
+        @test cms.tablesize == 0
+    end
+
+    @testset "CountMinSketch normal constructor" begin
+        cms = CountMinSketch{UInt16}(4, 100)
+        @test eltype(cms.sketch) == UInt16
+        @test size(cms.sketch) == (4, 100)
+        @test cms.tables == 4
+        @test cms.tablesize == 100
+
+        # table too small
+        @test_throws Exception CountMinSketch{UInt8}(4,0)
+        # too few tables
+        @test_throws Exception CountMinSketch{UInt8}(0,100)
+    end
+
+    @testset "CountMinSketch properties" begin
+        cms = CountMinSketch{UInt16}(4, 100)
+        @test eltype(cms) == UInt16
+        @test size(cms) == (4, 100)
+    end
+
+    @testset "CountMinSketch push/pop/add" begin
+        cms = CountMinSketch{UInt16}(4, 100)
+        @test cms[hash(1)] == UInt16(0)
+        push!(cms, hash(1))
+        @test cms[hash(1)] == UInt16(1)
+        push!(cms, hash(1))
+        @test cms[hash(1)] == UInt16(2)
+        pop!(cms, hash(1))
+        @test cms[hash(1)] == UInt16(1)
+        add!(cms, hash(1), 100)
+        @test cms[hash(1)] == UInt16(101)
+        add!(cms, hash(1), -10)
+        @test cms[hash(1)] == UInt16(91)
+    end
+
+    @testset "CountMinSketch getindex" begin
+        cms = CountMinSketch{UInt16}(4, 100)
+        item = "ABCD"
+        @test cms[item] == UInt16(0)
+        push!(cms, item)
+        @test cms[item] == UInt16(1)
+        push!(cms, item)
+        @test cms[item] == UInt16(2)
+        pop!(cms, item)
+        @test cms[item] == UInt16(1)
+        add!(cms, item, 100)
+        @test cms[item] == UInt16(101)
+        add!(cms, item, -10)
+        @test cms[item] == UInt16(91)
+    end
 end
 
-facts("CountMinSketch normal constructor") do
-    cms = CountMinSketch{UInt16}(4, 100)
-    @fact eltype(cms.sketch) --> UInt16
-    @fact size(cms.sketch) --> (4, 100)
-    @fact cms.moduli --> UInt64[97, 89, 83, 79]
+@testset "CountMinSketch IO" begin
+    @testset "CountMinSketch Read/Write" begin
+        mktempdir() do dir
 
-    # table too small
-    @fact_throws CountMinSketch{UInt8}(4,0)
-    # too few tables
-    @fact_throws CountMinSketch{UInt8}(0,100)
+        end
+        
+
+    end
+
+
 end
 
-facts("CountMinSketch properties") do
-    cms = CountMinSketch{UInt16}(4, 100)
-    @fact eltype(cms) --> UInt16
-    @fact size(cms) --> (4, 100)
-end
-
-facts("CountMinSketch push/pop/add") do
-    cms = CountMinSketch{UInt16}(4, 100)
-    @fact cms[hash(1)] --> UInt16(0)
-    push!(cms, hash(1))
-    @fact cms[hash(1)] --> UInt16(1)
-    push!(cms, hash(1))
-    @fact cms[hash(1)] --> UInt16(2)
-    pop!(cms, hash(1))
-    @fact cms[hash(1)] --> UInt16(1)
-    add!(cms, hash(1), 100)
-    @fact cms[hash(1)] --> UInt16(101)
-    add!(cms, hash(1), -10)
-    @fact cms[hash(1)] --> UInt16(91)
-end
-
-facts("CountMinSketch getindex") do
-    cms = CountMinSketch{UInt16}(4, 100)
-    @fact cms[hash(1)] --> UInt16(0)
-    push!(cms, hash(1))
-    @fact cms[hash(1)] --> UInt16(1)
-    push!(cms, hash(1))
-    @fact cms[hash(1)] --> UInt16(2)
-    pop!(cms, hash(1))
-    @fact cms[hash(1)] --> UInt16(1)
-    add!(cms, hash(1), 100)
-    @fact cms[hash(1)] --> UInt16(101)
-    add!(cms, hash(1), -10)
-    @fact cms[hash(1)] --> UInt16(91)
-end
 
 end # module TestCountMinSketch
