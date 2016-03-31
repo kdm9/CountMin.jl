@@ -1,19 +1,19 @@
 module CountMin
 
 export CountMinSketch,
-        push!,
-        pop!,
-        add!,
-        haskey,
-        getindex,
-        collisionrate,
-        readcms,
-        readcms!,
-        writecms,
-        append!,
-        unappend!,
-        eltype,
-        size
+       push!,
+       pop!,
+       add!,
+       haskey,
+       getindex,
+       collisionrate,
+       readcms,
+       readcms!,
+       writecms,
+       append!,
+       unappend!,
+       eltype,
+       size
 
 
 import Base: read!,
@@ -35,8 +35,10 @@ type CountMinSketch{T<:Unsigned}
     tables::Unsigned
     # Number of bins per table
     tablesize::Unsigned
-    # we store bins in a Matrix
+
+    # We store the sketch as a Matrix
     sketch::Matrix{T}
+
     function CountMinSketch(tables::Integer, tablesize::Integer)
         if !(1 <= tables <= 20)
             error("Must have between 1 and 20 tables")
@@ -45,6 +47,7 @@ type CountMinSketch{T<:Unsigned}
         sketch = zeros(T, tables, tablesize)
         return new(tables, tablesize, sketch)
     end
+
     function CountMinSketch()
         return new(0, 0, zeros(T,0,0))
     end
@@ -57,11 +60,7 @@ function add!(cms::CountMinSketch, item, count)
             cms.sketch[i, offset] += count
         catch InexactError
             # clamp overflow to typemin/typemax(eltype(sketch))
-            if count > 0
-                newval = typemax(eltype(cms))
-            else
-                newval = typemin(eltype(cms))
-            end
+            newval = count > 0 ? typemax(eltype(cms)) : typemin(eltype(cms))
             cms.sketch[i, offset] = newval
         end
     end
