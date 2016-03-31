@@ -6,22 +6,31 @@ export CountMinSketch,
         add!,
         haskey,
         getindex,
-        setindex!,
         collisionrate,
-        write,
-        read!,
+        readcms,
+        readcms!,
+        writecms,
         append!,
         unappend!,
         eltype,
         size
 
 
-import Base: read!, write, push!, pop!, getindex, setindex!, eltype, size
+import Base: read!,
+             write,
+             push!,
+             pop!,
+             getindex,
+             eltype,
+             size
 import HDF5: h5open
 
 
 # Our CountMinSketch implementation
 type CountMinSketch{T<:Unsigned}
+    # tables and tablesize are purely for convenience, and are just
+    # shape(sketch)
+
     # Num tables (to save geting this from shape(sketch)
     tables::Unsigned
     # Number of bins per table
@@ -61,7 +70,7 @@ function getindex(cms::CountMinSketch, item)
 end
 
 function setindex!(cms::CountMinSketch, item, value::Integer)
-    min = 0
+    min = Inf
     for i in 1:cms.tables
         offset = item % cms.tablesize + 1
         val = cms.sketch[i, offset]
@@ -101,22 +110,26 @@ function collisionrate(cms::CountMinSketch)
     return rate
 end
 
-function write(filename::AbstractString, cms::CountMinSketch)
-    h5open(filename, 'w') do h5f
-        h5f["sketch", "blosc", 9] = cms.sketch
+function writecms(filename::AbstractString, cms::CountMinSketch)
+    h5open(filename, "w") do h5f
+        chunksize = (1, min(2^20, cms.tablesize))
+        h5f["sketch", "blosc", 9, "chunk", chunksize] = cms.sketch
     end
 end
 
-function read!(filename::AbstractString, cms::CountMinSketch)
-    h5open(filename, 'r') do h5f
-        cms.sketch = h5f["sketch"]
-        cms.tables, cms.tablesize = shape(cms.sketch)
-    end
+function readcms!(filename::AbstractString, cms::CountMinSketch)
 end
 
-function read(filename)
-    cms = CountMinSketch()
-    read!(filename, cms)
+function readcms(filename::AbstractString)
+    cms = 0
+    h5open(filename, "r") do h5f
+        sketch = h5f["sketch"]
+        nt, ts = size(sketch)
+        cms = CountMinSketch{eltype(sketch)}(nt, ts)
+        cms.sketch = read(sketch)
+        cms.tables, cms.tablesize = nt, ts
+    end
+    return cms
 end
 
 function append!(a::CountMinSketch, b::CountMinSketch)
