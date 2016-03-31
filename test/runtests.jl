@@ -9,6 +9,8 @@ else
     const Test = BaseTestNext
 end
 
+include("testutil.jl")
+
 
 @testset "CountMinSketch Basic Operations" begin
     @testset "CountMinSketch empty constructor" begin
@@ -32,8 +34,7 @@ end
         @test cms.tables == 4
         @test cms.tablesize == 100
 
-        # table too small
-        @test_throws Exception CountMinSketch{UInt8}(4,0)
+        # table too small @test_throws Exception CountMinSketch{UInt8}(4,0)
         # too few tables
         @test_throws Exception CountMinSketch{UInt8}(0,100)
     end
@@ -89,27 +90,25 @@ end
 
 @testset "CountMinSketch IO" begin
     @testset "CountMinSketch Read/Write" begin
-        mktempdir() do dir
-            cd(dir) do
-                cms = CountMinSketch{UInt16}(4, 100)
-                item = "ABCD"
+        intempdir() do
+            cms = CountMinSketch{UInt16}(4, 100)
+            item = "ABCD"
 
-                # Add item
-                @test cms[item] == UInt16(0)
-                push!(cms, item)
-                @test cms[item] == UInt16(1)
+            # Add item
+            @test cms[item] == UInt16(0)
+            push!(cms, item)
+            @test cms[item] == UInt16(1)
 
-                # Save and reload
-                writecms("cms.h5", cms)
+            # Save and reload
+            writecms("cms.h5", cms)
 
-                newcms = readcms("cms.h5")
-                # Shape & Type
-                @test size(cms) == size(newcms)
-                @test eltype(cms) == eltype(newcms)
+            newcms = readcms("cms.h5")
+            # Shape & Type
+            @test size(cms) == size(newcms)
+            @test eltype(cms) == eltype(newcms)
 
-                # Ensure value is preserved
-                @test newcms[item] == UInt16(1)
-            end
+            # Ensure value is preserved
+            @test newcms[item] == UInt16(1)
         end
     end
 end
