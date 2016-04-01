@@ -31,10 +31,10 @@ type CountMinSketch{T<:Unsigned}
     # tables and tablesize are purely for convenience, and are just
     # shape(sketch)
 
-    # Num tables (to save geting this from shape(sketch)
-    tables::Unsigned
     # Number of bins per table
     tablesize::Unsigned
+    # Num tables (to save geting this from shape(sketch)
+    tables::Unsigned
 
     # We store the sketch as a Matrix
     sketch::Matrix{T}
@@ -44,8 +44,8 @@ type CountMinSketch{T<:Unsigned}
             error("Must have between 1 and 20 tables")
         end
         tablesize > 1 || error("Table size must be greater than 1")
-        sketch = zeros(T, tables, tablesize)
-        return new(tables, tablesize, sketch)
+        sketch = zeros(T, tablesize, tables)
+        return new(tablesize, tables, sketch)
     end
 
     function CountMinSketch()
@@ -57,11 +57,11 @@ function add!(cms::CountMinSketch, item, count)
     for i in 1:cms.tables
         offset = hash(item, hash(i)) % cms.tablesize + 1
         try
-            cms.sketch[i, offset] += count
+            cms.sketch[offset, i] += count
         catch InexactError
             # clamp overflow to typemin/typemax(eltype(sketch))
             newval = count > 0 ? typemax(eltype(cms)) : typemin(eltype(cms))
-            cms.sketch[i, offset] = newval
+            cms.sketch[offset, i] = newval
         end
     end
 end
@@ -70,7 +70,7 @@ function getindex(cms::CountMinSketch, item)
     min = Inf
     for i in 1:cms.tables
         offset = hash(item, hash(i)) % cms.tablesize + 1
-        val = cms.sketch[i, offset]
+        val = cms.sketch[offset, i]
         if val < min
             min = val
         end
@@ -109,7 +109,8 @@ end
 
 function writecms(filename::AbstractString, cms::CountMinSketch)
     h5open(filename, "w") do h5f
-        chunksize = (1, min(2^20, cms.tablesize))
+        # Chunks of up to 1MB by one table
+        chunksize = (min(2^20, cms.tablesize), 1)
         h5f["sketch", "blosc", 9, "chunk", chunksize] = cms.sketch
     end
 end
@@ -121,10 +122,12 @@ function readcms(filename::AbstractString)
     cms = 0
     h5open(filename, "r") do h5f
         sketch = h5f["sketch"]
-        nt, ts = size(sketch)
+        # Sketch is stored column major
+        ts, nt = size(sketch)
         cms = CountMinSketch{eltype(sketch)}(nt, ts)
         cms.sketch = read(sketch)
-        cms.tables, cms.tablesize = nt, ts
+        cms.tables = nt
+        cms.tablesize = ts
     end
     return cms
 end

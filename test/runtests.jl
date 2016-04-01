@@ -30,7 +30,7 @@ include("testutil.jl")
     @testset "CountMinSketch normal constructor" begin
         cms = CountMinSketch{UInt16}(4, 100)
         @test eltype(cms.sketch) == UInt16
-        @test size(cms.sketch) == (4, 100)
+        @test size(cms.sketch) == (100, 4)
         @test cms.tables == 4
         @test cms.tablesize == 100
 
@@ -42,7 +42,7 @@ include("testutil.jl")
     @testset "CountMinSketch properties" begin
         cms = CountMinSketch{UInt16}(4, 100)
         @test eltype(cms) == UInt16
-        @test size(cms) == (4, 100)
+        @test size(cms) == (100, 4)
     end
 
     @testset "CountMinSketch push/pop/add" begin
