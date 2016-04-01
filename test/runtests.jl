@@ -88,6 +88,7 @@ include("testutil.jl")
     end
 end
 
+
 @testset "CountMinSketch IO" begin
     @testset "CountMinSketch Read/Write" begin
         intempdir() do
@@ -111,6 +112,22 @@ end
             @test newcms[item] == UInt16(1)
         end
     end
+end
+
+
+@testset "collisionrate(CountMinSketch)" begin
+    cms = CountMinSketch{UInt16}(4, 100)
+
+    # Fill the first half of each table. This is super dodgy
+    for table in 1:4
+        for i in 1:50
+            cms.sketch[i, table] = 1
+        end
+    end
+    # The above is to satisfy the following
+    # @test sum(cms.sketch, 1) == UInt64[50 50 50 50]
+
+    @test collisionrate(cms) == 0.5^4
 end
 
 

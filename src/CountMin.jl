@@ -100,7 +100,7 @@ end
 
 function collisionrate(cms::CountMinSketch)
     # Expectected collision rate, modified from Khmer
-    occupancy = sum(cms.sketch .> 0, 2)
+    occupancy = sum(cms.sketch .> 0, 1)
     # The total FPR is the product of all rates, as we assume each is truly
     # independent
     rate = prod(float(occupancy) / float(cms.tablesize))
