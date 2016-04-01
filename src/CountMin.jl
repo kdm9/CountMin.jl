@@ -8,7 +8,6 @@ export CountMinSketch,
        getindex,
        collisionrate,
        readcms,
-       readcms!,
        writecms,
        append!,
        unappend!,
@@ -53,7 +52,7 @@ type CountMinSketch{T<:Unsigned}
     end
 end
 
-function add!(cms::CountMinSketch, item, count)
+function add!(cms::CountMinSketch, item, count::Integer)
     for i in 1:cms.tables
         offset = hash(item, hash(i)) % cms.tablesize + 1
         try
@@ -67,15 +66,15 @@ function add!(cms::CountMinSketch, item, count)
 end
 
 function getindex(cms::CountMinSketch, item)
-    min = Inf
+    minval = Inf
     for i in 1:cms.tables
         offset = hash(item, hash(i)) % cms.tablesize + 1
         val = cms.sketch[offset, i]
-        if val < min
-            min = val
+        if val < minval
+            minval = val
         end
     end
-    return min
+    return minval
 end
 
 function push!(cms::CountMinSketch, item)
@@ -113,9 +112,6 @@ function writecms(filename::AbstractString, cms::CountMinSketch)
         chunksize = (min(2^20, cms.tablesize), 1)
         h5f["sketch", "blosc", 9, "chunk", chunksize] = cms.sketch
     end
-end
-
-function readcms!(filename::AbstractString, cms::CountMinSketch)
 end
 
 function readcms(filename::AbstractString)
