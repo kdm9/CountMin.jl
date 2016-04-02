@@ -19,12 +19,21 @@ The API tries to follow the Julia standard method names.
 
     # make a CMS with 4 tables of ~1000 cells
     # Each cell will be a UInt8, so can count to 255. You can use any unsigned
-    # type as the cell type.
+    # integral type as the cell type.
     cms = CountMinSketch{UInt8}(4, 1000)
-    # add the hash value of something
-    add!(cms, hash("Hello"))
-    assert(contains(cms, hash("Hello")) == 1)
-    add!(cms, hash("Hello"))
-    add!(cms, hash("Hello"))
-    add!(cms, hash("Hello"))
-    assert(contains(cms, hash("Hello")) == 4)
+
+    # add the string "Hello"
+    push!(cms, "Hello")
+    assert(cms["Hello"] == 1)
+
+    # Add 3 counts of the string "World"
+    add!(cms, "World", 3)
+    assert(cms["World"] == 3)
+
+    # Remove the count of "Hello"
+    pop!(cms, "Hello")
+    assert(cms["Hello"] == 0)
+
+    # Remove two counts of "World"
+    add!(cms, "World", -2)
+    assert(cms["World"] == 1)
