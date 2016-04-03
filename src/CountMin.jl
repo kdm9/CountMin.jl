@@ -14,7 +14,6 @@ export CountMinSketch,
        eltype,
        size
 
-
 import Base: read!,
              write,
              push!,
@@ -22,36 +21,78 @@ import Base: read!,
              getindex,
              eltype,
              size
+
 import HDF5: h5open
 
 
-# Our CountMinSketch implementation
+
+"""
+A Count-min Sketch
+
+### Implementation Notes
+
+Sketches are stored such that each table is contiguous, which in Julia means
+that tables need to be columns. To ease transition between those using this
+datastructure in Python or C, we preseve the (number of tables, table size)
+way of referring to the sketch's size, and just reverse this internally.
+"""
 type CountMinSketch{T<:Unsigned}
     # tables and tablesize are purely for convenience, and are just
     # shape(sketch)
 
     # Number of bins per table
     tablesize::Unsigned
-    # Num tables (to save geting this from shape(sketch)
+
+    # Num tables (to save getting this from shape(sketch)
     tables::Unsigned
 
     # We store the sketch as a Matrix
     sketch::Matrix{T}
 
-    function CountMinSketch(tables::Integer, tablesize::Integer)
-        if !(1 <= tables <= 20)
-            error("Must have between 1 and 20 tables")
-        end
-        tablesize > 1 || error("Table size must be greater than 1")
-        sketch = zeros(T, tablesize, tables)
-        return new(tablesize, tables, sketch)
-    end
 
-    function CountMinSketch()
-        return new(0, 0, zeros(T,0,0))
-    end
 end
 
+"""
+The constructor for `CountMinSketch`es
+
+Arguments
+---------
+
+* `tables::Integer`: The number of tables to create
+* `tablesize::Integer`: The size of each table
+"""
+function CountMinSketch(tables::Integer, tablesize::Integer)
+    if !(1 <= tables <= 20)
+        error("Must have between 1 and 20 tables")
+    end
+    tablesize > 1 || error("Table size must be greater than 1")
+    sketch = zeros(T, tablesize, tables)
+    return new(tablesize, tables, sketch)
+end
+
+"""
+A trivial constructor for `CountMinSketch`es.
+
+WARNING: This trivial constructor instantiates a tiny `CountMinSketch`, which
+         will be useless for anything but a simple test. Storing more than 10
+         items  is not recommended.
+"""
+function CountMinSketch()
+    return CountMinSketch(4, 1000)
+end
+
+
+"""
+Adds `count` `item`s to a CountMinSketch
+
+This function will never allow the counts for an item to overflow or underflow.
+
+Arguments
+---------
+* `cms`: A count-min sketch
+* `item`: any hashable item
+* `count::Integer`: a (potentially negative) number of `item`s to add.
+"""
 function add!(cms::CountMinSketch, item, count::Integer)
     for i in 1:cms.tables
         offset = hash(item, hash(i)) % cms.tablesize + 1
@@ -65,6 +106,18 @@ function add!(cms::CountMinSketch, item, count::Integer)
     end
 end
 
+
+"""
+Determine count of an item in a CountMinSketch.
+
+NB: This function returns an estimate of the true count. This estimate is never
+    lower than the true count, but has a very low probablity of being higher.
+
+Arguments
+---------
+* `cms`: A count-min sketch
+* `item`: any hashable item
+"""
 function getindex(cms::CountMinSketch, item)
     minval = Inf
     for i in 1:cms.tables
@@ -77,24 +130,60 @@ function getindex(cms::CountMinSketch, item)
     return minval
 end
 
+
+"""
+Add one `item` from a CountMinSketch
+
+This function will never allow the counts for an item to overflow.
+
+Arguments
+---------
+* `cms`: A count-min sketch
+* `item`: any hashable item
+"""
 function push!(cms::CountMinSketch, item)
     add!(cms, item, 1)
 end
 
+
+"""
+Remove one `item` from a CountMinSketch
+
+This function will never allow the counts for an item to underflow.
+
+Arguments
+---------
+* `cms`: A count-min sketch
+* `item`: any hashable item
+"""
 function pop!(cms::CountMinSketch, item)
     add!(cms, item, -1)
 end
 
+"""
+Test for presence of an item in a CountMinSketch.
+
+NB: This function never returns a false negative, but has a very low probablity
+    of returning a false positive due to collision.
+"""
 function haskey(cms::CountMinSketch, item)
     return cms[item] > 0
 end
 
+"""
+Element type of a CountMinSketch
+"""
 function eltype(cms::CountMinSketch)
     return eltype(cms.sketch)
 end
 
+"""
+Shape of a CountMinSketch, i.e. (number of tables, tablesize).
+"""
 function size(cms::CountMinSketch)
-    return size(cms.sketch)
+    # It's the reverse as we store the sketch in table-major order (which in
+    # Julia means transposed (tables are columns), as Julia is Column major).
+    return reverse(size(cms.sketch))
 end
 
 function collisionrate(cms::CountMinSketch)
@@ -142,4 +231,4 @@ function unappend!(a::CountMinSketch, b::CountMinSketch)
     a.sketch -= b.sketch
 end
 
-end # module CountMinSketch
+end # module CountMin
