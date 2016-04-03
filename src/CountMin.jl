@@ -40,46 +40,45 @@ type CountMinSketch{T<:Unsigned}
     # tables and tablesize are purely for convenience, and are just
     # shape(sketch)
 
-    # Number of bins per table
-    tablesize::Unsigned
-
     # Num tables (to save getting this from shape(sketch)
     tables::Unsigned
 
+    # Number of bins per table
+    tablesize::Unsigned
+
     # We store the sketch as a Matrix
     sketch::Matrix{T}
-end
 
+    """
+    The constructor for `CountMinSketch`es
 
-"""
-The constructor for `CountMinSketch`es
+    Arguments
+    ---------
 
-Arguments
----------
-
-* `tables::Integer`: The number of tables to create
-* `tablesize::Integer`: The size of each table
-"""
-function CountMinSketch{T<:Unsigned}(tables::Integer, tablesize::Integer)
-    if !(1 <= tables <= 20)
-        error("Must have between 1 and 20 tables")
+    * `tables::Integer`: The number of tables to create
+    * `tablesize::Integer`: The size of each table
+    """
+    function CountMinSketch(tables::Integer, tablesize::Integer)
+        if !(1 <= tables <= 20)
+            error("Must have between 1 and 20 tables")
+        end
+        tablesize > 1 || error("Table size must be greater than 1")
+        sketch = zeros(T, tablesize, tables)
+        return new(tables, tablesize, sketch)
     end
-    tablesize > 1 || error("Table size must be greater than 1")
-    sketch = zeros(T, tablesize, tables)
-    return CountMinSketch(tablesize, tables, sketch)
 end
 
 
 """
 A trivial constructor for `CountMinSketch`es.
 
+Creates a sketch with 4 tables of 1000 UInt8-typed bins.
+
 WARNING: This trivial constructor instantiates a tiny `CountMinSketch`, which
          will be useless for anything but a simple test. Storing more than 10
          items  is not recommended.
 """
-function CountMinSketch()
-    return CountMinSketch{UInt8}(4, 1000)
-end
+CountMinSketch() = CountMinSketch{UInt8}(4, 1000)
 
 
 """
