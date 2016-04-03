@@ -12,19 +12,13 @@ end
 include("testutil.jl")
 
 
-@testset "CountMinSketch Basic Operations" begin
+@testset "CountMinSketch tests" begin
     @testset "CountMinSketch empty constructor" begin
-        cms = CountMinSketch{UInt16}()
-        @test eltype(cms.sketch) == UInt16
-        @test cms.sketch == zeros(UInt16, 0, 0)
-        @test cms.tables == 0
-        @test cms.tablesize == 0
-
-        cms = CountMinSketch{UInt8}()
+        cms = CountMinSketch()
         @test eltype(cms.sketch) == UInt8
-        @test cms.sketch == zeros(UInt8, 0, 0)
-        @test cms.tables == 0
-        @test cms.tablesize == 0
+        @test cms.sketch == zeros(UInt8, 1000, 4)
+        @test cms.tables == 4
+        @test cms.tablesize == 1000
     end
 
     @testset "CountMinSketch normal constructor" begin
@@ -37,12 +31,15 @@ include("testutil.jl")
         # table too small @test_throws Exception CountMinSketch{UInt8}(4,0)
         # too few tables
         @test_throws Exception CountMinSketch{UInt8}(0,100)
+        @test_throws Exception CountMinSketch{UInt8}(100,100)
     end
 
-    @testset "CountMinSketch properties" begin
+    @testset "CountMinSketch size/eltype" begin
         cms = CountMinSketch{UInt16}(4, 100)
+        @test eltype(cms.sketch) == UInt16
         @test eltype(cms) == UInt16
-        @test size(cms) == (100, 4)
+        @test size(cms.sketch) == (100, 4)
+        @test size(cms) == (4, 100)
     end
 
     @testset "CountMinSketch push/pop/add" begin
@@ -86,10 +83,7 @@ include("testutil.jl")
         add!(cms, item, -256)
         @test cms[item] == 0
     end
-end
 
-
-@testset "CountMinSketch IO" begin
     @testset "CountMinSketch Read/Write" begin
         intempdir() do
             cms = CountMinSketch{UInt16}(4, 100)
@@ -112,23 +106,22 @@ end
             @test newcms[item] == UInt16(1)
         end
     end
-end
 
 
-@testset "collisionrate(CountMinSketch)" begin
-    cms = CountMinSketch{UInt16}(4, 100)
+    @testset "collisionrate(CountMinSketch)" begin
+        cms = CountMinSketch{UInt16}(4, 100)
 
-    # Fill the first half of each table. This is super dodgy
-    for table in 1:4
-        for i in 1:50
-            cms.sketch[i, table] = 1
+        # Fill the first half of each table. This is super dodgy
+        for table in 1:4
+            for i in 1:50
+                cms.sketch[i, table] = 1
+            end
         end
+        # The above is to satisfy the following
+        # @test sum(cms.sketch, 1) == UInt64[50 50 50 50]
+
+        @test collisionrate(cms) == 0.5^4
     end
-    # The above is to satisfy the following
-    # @test sum(cms.sketch, 1) == UInt64[50 50 50 50]
-
-    @test collisionrate(cms) == 0.5^4
-end
-
+end # testset CountMinSketch
 
 end # module TestCountMinSketch

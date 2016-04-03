@@ -48,9 +48,8 @@ type CountMinSketch{T<:Unsigned}
 
     # We store the sketch as a Matrix
     sketch::Matrix{T}
-
-
 end
+
 
 """
 The constructor for `CountMinSketch`es
@@ -61,14 +60,15 @@ Arguments
 * `tables::Integer`: The number of tables to create
 * `tablesize::Integer`: The size of each table
 """
-function CountMinSketch(tables::Integer, tablesize::Integer)
+function CountMinSketch{T<:Unsigned}(tables::Integer, tablesize::Integer)
     if !(1 <= tables <= 20)
         error("Must have between 1 and 20 tables")
     end
     tablesize > 1 || error("Table size must be greater than 1")
     sketch = zeros(T, tablesize, tables)
-    return new(tablesize, tables, sketch)
+    return CountMinSketch(tablesize, tables, sketch)
 end
+
 
 """
 A trivial constructor for `CountMinSketch`es.
@@ -78,7 +78,7 @@ WARNING: This trivial constructor instantiates a tiny `CountMinSketch`, which
          items  is not recommended.
 """
 function CountMinSketch()
-    return CountMinSketch(4, 1000)
+    return CountMinSketch{UInt8}(4, 1000)
 end
 
 
@@ -93,15 +93,16 @@ Arguments
 * `item`: any hashable item
 * `count::Integer`: a (potentially negative) number of `item`s to add.
 """
-function add!(cms::CountMinSketch, item, count::Integer)
-    for i in 1:cms.tables
+function add!{T<:Unsigned}(cms::CountMinSketch{T}, item, count::Integer)
+    i::UInt = 0
+    while (i+=1) <= cms.tables
         offset = hash(item, hash(i)) % cms.tablesize + 1
         try
-            cms.sketch[offset, i] += count
+            @inbounds cms.sketch[offset, i] += count
         catch InexactError
             # clamp overflow to typemin/typemax(eltype(sketch))
-            newval = count > 0 ? typemax(eltype(cms)) : typemin(eltype(cms))
-            cms.sketch[offset, i] = newval
+            newval::T = count > 0 ? typemax(eltype(cms)) : typemin(eltype(cms))
+            @inbounds cms.sketch[offset, i] = newval
         end
     end
 end
@@ -118,11 +119,12 @@ Arguments
 * `cms`: A count-min sketch
 * `item`: any hashable item
 """
-function getindex(cms::CountMinSketch, item)
-    minval = Inf
-    for i in 1:cms.tables
+function getindex{T<:Unsigned}(cms::CountMinSketch{T}, item)
+    minval::T = typemax(T)
+    i::UInt = 0
+    while (i+=1) <= cms.tables
         offset = hash(item, hash(i)) % cms.tablesize + 1
-        val = cms.sketch[offset, i]
+        @inbounds val = cms.sketch[offset, i]
         if val < minval
             minval = val
         end
