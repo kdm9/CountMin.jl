@@ -9,3 +9,4 @@ sudo:
 
 script:
   - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.test("CountMin")'
+  - julia misc/cms.jl
