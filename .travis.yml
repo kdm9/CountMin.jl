@@ -7,6 +7,11 @@ julia:
 sudo:
  false
 
+install:
+  # DataStructures is for the benchmarking script
+  - julia -e 'Pkg.init();Pkg.add("DataStructures")'
+  - julia -e 'Pkg.clone(pwd());'
+
 script:
-  - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.test("CountMin")'
+  - julia test/runtests.jl
   - julia misc/cms.jl
