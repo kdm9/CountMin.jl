@@ -11,7 +11,7 @@ function dotest(cms, n::Integer)
 end
 
 println("Doing CMS")
-cms = CountMinSketch{UInt8}(4, 2^30)
+cms = CountMinSketch{UInt8}(4, 2^28)
 dotest(cms, 1000)
 @time dotest(cms, N)
 
@@ -33,7 +33,7 @@ function sumtest(cms, n)
         sm += cms[i]
     end
 end
-        
+
 println("Profiling add/push")
 Profile.clear()
 @profile dotest(cms, N)
