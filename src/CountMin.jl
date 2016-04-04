@@ -49,6 +49,14 @@ type CountMinSketch{T<:Unsigned}
     # We store the sketch as a Matrix
     sketch::Matrix{T}
 
+    # hash(i) for i in 1:ntables, used to seed hash values. Precomputed for
+    # speed
+    seeds::Vector{UInt64}
+
+    # Type min and max precomuted to avoid allocs
+    tpmax::Integer
+    tpmin::Integer
+
     """
     The constructor for `CountMinSketch`es
 
@@ -64,7 +72,8 @@ type CountMinSketch{T<:Unsigned}
         end
         tablesize > 1 || error("Table size must be greater than 1")
         sketch = zeros(T, tablesize, tables)
-        return new(tables, tablesize, sketch)
+        seeds = map(hash, 1:tables)
+        return new(tables, tablesize, sketch, seeds, typemax(T), typemin(T))
     end
 end
 
@@ -93,15 +102,14 @@ Arguments
 * `count::Integer`: a (potentially negative) number of `item`s to add.
 """
 function add!{T<:Unsigned}(cms::CountMinSketch{T}, item, count::Integer)
-    i::UInt = 0
+    i = 0
     while (i+=1) <= cms.tables
-        offset = hash(item, hash(i)) % cms.tablesize + 1
+        offset = (hash(item, hash(i)) % cms.tablesize) + 1
         try
             @inbounds cms.sketch[offset, i] += count
         catch InexactError
             # clamp overflow to typemin/typemax(eltype(sketch))
-            newval::T = count > 0 ? typemax(eltype(cms)) : typemin(eltype(cms))
-            @inbounds cms.sketch[offset, i] = newval
+            @inbounds cms.sketch[offset, i] = count > 0 ? cms.tpmax : cms.tpmin
         end
     end
 end
@@ -118,11 +126,11 @@ Arguments
 * `cms`: A count-min sketch
 * `item`: any hashable item
 """
-function getindex{T<:Unsigned}(cms::CountMinSketch{T}, item)
-    minval::T = typemax(T)
-    i::UInt = 0
+function getindex(cms::CountMinSketch, item)
+    minval = cms.tpmax
+    i = 0
     while (i+=1) <= cms.tables
-        offset = hash(item, hash(i)) % cms.tablesize + 1
+        offset = (hash(item, hash(i)) % cms.tablesize) + 1
         @inbounds val = cms.sketch[offset, i]
         if val < minval
             minval = val
@@ -171,12 +179,14 @@ function haskey(cms::CountMinSketch, item)
     return cms[item] > 0
 end
 
+
 """
 Element type of a CountMinSketch
 """
 function eltype(cms::CountMinSketch)
     return eltype(cms.sketch)
 end
+
 
 """
 Shape of a CountMinSketch, i.e. (number of tables, tablesize).
@@ -187,6 +197,7 @@ function size(cms::CountMinSketch)
     return reverse(size(cms.sketch))
 end
 
+
 function collisionrate(cms::CountMinSketch)
     # Expectected collision rate, modified from Khmer
     occupancy = sum(cms.sketch .> 0, 1)
@@ -196,6 +207,7 @@ function collisionrate(cms::CountMinSketch)
     return rate
 end
 
+
 function writecms(filename::AbstractString, cms::CountMinSketch)
     h5open(filename, "w") do h5f
         # Chunks of up to 1MB by one table
@@ -203,6 +215,7 @@ function writecms(filename::AbstractString, cms::CountMinSketch)
         h5f["sketch", "blosc", 9, "chunk", chunksize] = cms.sketch
     end
 end
+
 
 function readcms(filename::AbstractString)
     cms = 0
@@ -218,12 +231,14 @@ function readcms(filename::AbstractString)
     return cms
 end
 
+
 function append!(a::CountMinSketch, b::CountMinSketch)
     if shape(a) != shape(b)
         error("CountMinSketches must be of the exact same sketch dimensions")
     end
     a.sketch += b.sketch
 end
+
 
 function unappend!(a::CountMinSketch, b::CountMinSketch)
     if shape(a) != shape(b)

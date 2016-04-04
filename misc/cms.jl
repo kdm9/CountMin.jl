@@ -5,8 +5,9 @@ using CountMin
 N = 100000
 
 function dotest(cms, n::Integer)
-    for i in 1:n
-        push!(cms, i+=1)
+    x = n
+    while x > 0
+        push!(cms, x-=1)
     end
 end
 
@@ -34,14 +35,14 @@ function sumtest(cms, n)
     end
 end
 
+@time sumtest(cms, N)
+
 println("Profiling add/push")
 Profile.clear()
 @profile dotest(cms, N)
-Profile.print()
+Profile.print(maxdepth=15)
 
 println("Profiling getitem")
 Profile.clear()
 @profile sumtest(cms, N)
-Profile.print()
-#dotest(ctr, 1000)
-
+Profile.print(maxdepth=15)
