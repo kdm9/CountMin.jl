@@ -5,9 +5,8 @@ using CountMin
 N = 100000
 
 function dotest(cms, n::Integer)
-    x = n
-    while x > 0
-        push!(cms, x-=1)
+    while n > 0
+        push!(cms, n-=1)
     end
 end
 
@@ -29,7 +28,7 @@ end
 println("All Good!")
 
 function sumtest(cms, n)
-    sm::UInt = 0
+    sm = 0
     for i in 1:N
         sm += cms[i]
     end
