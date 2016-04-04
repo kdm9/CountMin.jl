@@ -1,5 +1,8 @@
 tags
-*.cov
 
 # editor temps
 *.sw[op]
+
+# julia temps
+*.cov
+*.mem
