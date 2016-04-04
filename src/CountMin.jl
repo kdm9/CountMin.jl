@@ -9,8 +9,6 @@ export CountMinSketch,
        collisionrate,
        readcms,
        writecms,
-       append!,
-       unappend!,
        eltype,
        size
 
@@ -23,7 +21,6 @@ import Base: read!,
              size
 
 import HDF5: h5open
-
 
 
 """
@@ -41,21 +38,17 @@ type CountMinSketch{T<:Unsigned}
     # shape(sketch)
 
     # Num tables (to save getting this from shape(sketch)
-    tables::Unsigned
+    tables::UInt
 
     # Number of bins per table
-    tablesize::Unsigned
+    tablesize::UInt
 
     # We store the sketch as a Matrix
     sketch::Matrix{T}
 
-    # hash(i) for i in 1:ntables, used to seed hash values. Precomputed for
-    # speed
-    seeds::Vector{UInt64}
-
     # Type min and max precomuted to avoid allocs
-    tpmax::Integer
-    tpmin::Integer
+    tpmax::Int
+    tpmin::Int
 
     """
     The constructor for `CountMinSketch`es
@@ -66,14 +59,13 @@ type CountMinSketch{T<:Unsigned}
     * `tables::Integer`: The number of tables to create
     * `tablesize::Integer`: The size of each table
     """
-    function CountMinSketch(tables::Integer, tablesize::Integer)
+    function CountMinSketch(tables::Int, tablesize::Int)
         if !(1 <= tables <= 20)
             error("Must have between 1 and 20 tables")
         end
         tablesize > 1 || error("Table size must be greater than 1")
         sketch = zeros(T, tablesize, tables)
-        seeds = map(hash, 1:tables)
-        return new(tables, tablesize, sketch, seeds, typemax(T), typemin(T))
+        return new(tables, tablesize, sketch, typemax(T), typemin(T))
     end
 end
 
@@ -101,13 +93,13 @@ Arguments
 * `item`: any hashable item
 * `count::Integer`: a (potentially negative) number of `item`s to add.
 """
-function add!{T<:Unsigned}(cms::CountMinSketch{T}, item, count::Integer)
-    i = 0
+function add!(cms::CountMinSketch, item, count::Int)
+    i::UInt = 0
     while (i+=1) <= cms.tables
         offset = (hash(item, hash(i)) % cms.tablesize) + 1
         try
             @inbounds cms.sketch[offset, i] += count
-        catch InexactError
+        catch
             # clamp overflow to typemin/typemax(eltype(sketch))
             @inbounds cms.sketch[offset, i] = count > 0 ? cms.tpmax : cms.tpmin
         end
@@ -128,7 +120,7 @@ Arguments
 """
 function getindex(cms::CountMinSketch, item)
     minval = cms.tpmax
-    i = 0
+    i::UInt = 0
     while (i+=1) <= cms.tables
         offset = (hash(item, hash(i)) % cms.tablesize) + 1
         @inbounds val = cms.sketch[offset, i]
