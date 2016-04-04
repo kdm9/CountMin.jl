@@ -18,7 +18,8 @@ import Base: read!,
              pop!,
              getindex,
              eltype,
-             size
+             size,
+             show
 
 import HDF5: h5open
 
@@ -56,8 +57,8 @@ type CountMinSketch{T<:Unsigned}
     Arguments
     ---------
 
-    * `tables::Integer`: The number of tables to create
-    * `tablesize::Integer`: The size of each table
+    * `tables::Int`: The number of tables to create
+    * `tablesize::Int`: The size of each table
     """
     function CountMinSketch(tables::Int, tablesize::Int)
         if !(1 <= tables <= 20)
@@ -80,6 +81,13 @@ WARNING: This trivial constructor instantiates a tiny `CountMinSketch`, which
          items  is not recommended.
 """
 CountMinSketch() = CountMinSketch{UInt8}(4, 1000)
+
+
+function show{T}(io::IO, cms::CountMinSketch{T})
+    nt = cms.tables
+    ts = cms.tablesize
+    print("CountMinSketch with $nt tables of $ts `$T`s")
+end
 
 
 """
