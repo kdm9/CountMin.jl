@@ -10,7 +10,8 @@ export CountMinSketch,
        readcms,
        writecms,
        eltype,
-       size
+       size,
+       show
 
 import Base: read!,
              write,
