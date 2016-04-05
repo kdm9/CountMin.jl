@@ -1,0 +1,31 @@
+site_name: CountMin.jl
+site_description: Count-min Sketches for Julia
+site_author: Kevin Murray
+
+# Repository
+repo_url:  https://github.com/kdmurray91/CountMin.jl
+
+# Copyright
+copyright: Copyright (c) 2016 Kevin Murray
+
+# Documentation and theme
+docs_dir: 'build'
+
+extra_css:
+  - assets/Documenter.css
+
+extra_javascript:
+  - https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
+  - assets/mathjaxhelper.js
+
+# Extensions
+markdown_extensions:
+  - extra
+  - tables
+  - fenced_code
+  - codehilite
+
+# Page tree
+pages:
+- Home: index.md
+- API: api.md
