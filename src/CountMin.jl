@@ -52,6 +52,8 @@ type CountMinSketch{T<:Unsigned}
     tpmax::Int
     tpmin::Int
 
+    seeds::Vector{UInt}
+
     """
     The constructor for `CountMinSketch`es
 
@@ -67,7 +69,8 @@ type CountMinSketch{T<:Unsigned}
         end
         tablesize > 1 || error("Table size must be greater than 1")
         sketch = zeros(T, tablesize, tables)
-        return new(tables, tablesize, sketch, typemax(T), typemin(T))
+        seeds = map(hash, 1:tables)
+        return new(tables, tablesize, sketch, typemax(T), typemin(T), seeds)
     end
 end
 
@@ -105,7 +108,7 @@ Arguments
 function add!(cms::CountMinSketch, item, count::Int)
     i::UInt = 0
     while (i+=1) <= cms.tables
-        offset = (hash(item, hash(i)) % cms.tablesize) + 1
+        offset = (hash(item, cms.seeds[i]) % cms.tablesize) + 1
         try
             @inbounds cms.sketch[offset, i] += count
         catch
@@ -131,7 +134,7 @@ function getindex(cms::CountMinSketch, item)
     minval = cms.tpmax
     i::UInt = 0
     while (i+=1) <= cms.tables
-        offset = (hash(item, hash(i)) % cms.tablesize) + 1
+        offset = (hash(item, cms.seeds[i]) % cms.tablesize) + 1
         @inbounds val = cms.sketch[offset, i]
         if val < minval
             minval = val
