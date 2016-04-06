@@ -199,6 +199,17 @@ function size(cms::CountMinSketch)
 end
 
 
+"""
+Estimates the collision or aliasing rate of a `CountMinSketch`.
+
+The collision rate is the probability that a random key will be added in such a
+way that it is indistinguishable to another random key. This is equivalent to
+the product of the probablities of colliding in each table independently, which
+is simply the occupancy rate of each table.
+
+Generally avoid using a `CountMinSketch` with a collision rate above about 0.05
+- 0.10.
+"""
 function collisionrate(cms::CountMinSketch)
     # Expectected collision rate, modified from Khmer
     occupancy = sum(cms.sketch .> 0, 1)
@@ -219,7 +230,6 @@ end
 
 
 function readcms(filename::AbstractString)
-    cms = 0
     h5open(filename, "r") do h5f
         sketch = h5f["sketch"]
         # Sketch is stored column major
@@ -228,8 +238,8 @@ function readcms(filename::AbstractString)
         cms.sketch = read(sketch)
         cms.tables = nt
         cms.tablesize = ts
+        return cms
     end
-    return cms
 end
 
 
