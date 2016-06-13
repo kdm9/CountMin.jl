@@ -136,9 +136,7 @@ function getindex(cms::CountMinSketch, item)
     while (i+=1) <= cms.tables
         offset = (hash(item, cms.seeds[i]) % cms.tablesize) + 1
         @inbounds val = cms.sketch[offset, i]
-        if val < minval
-            minval = val
-        end
+        minval = val < minval ? val : minval
     end
     return minval
 end
@@ -245,5 +243,19 @@ function readcms(filename::AbstractString)
     end
 end
 
+function readcms!(filename::AbstractString, cms::CountMinSketch)
+    h5open(filename, "r") do h5f
+        sketch = h5f["sketch"]
+        if eltpye(sketch) != eltype(cms)
+            error("Type mismatch reading sketch: use readcms()")
+        end
+        # Sketch is stored column major
+        ts, nt = size(sketch)
+        cms.sketch = read(sketch)
+        cms.tables = nt
+        cms.tablesize = ts
+        return cms
+    end
+end
 
 end # module CountMin
