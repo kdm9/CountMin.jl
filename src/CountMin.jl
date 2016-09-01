@@ -89,7 +89,7 @@ Arguments
 * `item`: any hashable item
 * `count::Integer`: a (potentially negative) number of `item`s to add.
 """
-function Base.add!(cms::CountMinSketch, item, count::Int)
+function add!(cms::CountMinSketch, item, count::Int)
     i::UInt = 0
     while (i+=1) <= cms.tables
         offset = (hash(item, cms.seeds[i]) % cms.tablesize) + 1

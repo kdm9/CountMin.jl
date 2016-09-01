@@ -1,6 +1,7 @@
 module TestCountMin
 
 using CountMin
+import CountMin: add!
 
 if VERSION >= v"0.5-"
     using Base.Test
