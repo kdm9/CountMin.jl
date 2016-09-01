@@ -7,6 +7,8 @@ julia:
   - 0.5
   - nightly
 
+dist: trusty
+
 matrix:
   allow_failures:
     - julia: nightly
