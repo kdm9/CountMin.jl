@@ -3,13 +3,11 @@ using CountMin
 import CountMin: add!
 
 
-N = 100
-N = 10000000
+N = 1_000_000
 
 function dotest(cms, n::Integer)
-    while n > 0
+    for i in 1:n
         push!(cms, n)
-        n -= 1
     end
 end
 
@@ -30,34 +28,13 @@ for i in 1:N
 end
 println("All Good!")
 
-function sumtest(cms, n)
-    a::UInt8 = 0
-    while n > 0
-        a = cms[n]
-        n -= 1
-    end
-end
-
-@time sumtest(cms, N)
-
-println("Profiling add/push")
-Profile.clear()
-@profile dotest(cms, N)
-Profile.print(maxdepth=15)
-
-println("Profiling getitem")
-Profile.clear()
-@profile sumtest(cms, N)
-Profile.print(maxdepth=15)
 
 function oflow(cms, n::Integer)
-    while n > 0
-        add!(cms, 255)
-        n -= 1
+    for i in 1:n
+        add!(cms, i, 255)
     end
 end
 
 println("Profiling add with overflow")
-Profile.clear()
-@profile oflow(cms, 10000)
-Profile.print(maxdepth=15)
+oflow(cms, 10)
+@time oflow(cms, 10000)

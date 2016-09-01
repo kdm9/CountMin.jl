@@ -8,12 +8,6 @@ julia:
   - nightly
 
 matrix:
-  include:
-    - branches:
-        only:
-          master
-      os: osx
-      julia: 0.5
   allow_failures:
     - julia: nightly  
   fast_finish: true
