@@ -1,27 +1,10 @@
-__precompile__(true)
+__precompile__()
 module CountMin
 
-export CountMinSketch,
-       push!,
-       pop!,
-       add!,
-       haskey,
-       getindex,
-       collisionrate,
-       readcms,
-       writecms,
-       eltype,
-       size,
-       show
-
-import Base: read!,
-             write,
-             push!,
-             pop!,
-             getindex,
-             eltype,
-             size,
-             show
+export  CountMinSketch,
+        collisionrate,
+        readcms,
+        writecms
 
 import HDF5: h5open
 
@@ -83,12 +66,12 @@ Creates a sketch with 4 tables of 1000 UInt8-typed bins.
 
 WARNING: This trivial constructor instantiates a tiny `CountMinSketch`, which
          will be useless for anything but a simple test. Storing more than 10
-         items  is not recommended.
+         items is not recommended.
 """
 CountMinSketch() = CountMinSketch{UInt8}(4, 1000)
 
 
-function show{T}(io::IO, cms::CountMinSketch{T})
+function Base.show{T}(io::IO, cms::CountMinSketch{T})
     nt = cms.tables
     ts = cms.tablesize
     print("CountMinSketch with $nt tables of $ts `$T`s")
@@ -106,7 +89,7 @@ Arguments
 * `item`: any hashable item
 * `count::Integer`: a (potentially negative) number of `item`s to add.
 """
-function add!(cms::CountMinSketch, item, count::Int)
+function Base.add!(cms::CountMinSketch, item, count::Int)
     i::UInt = 0
     while (i+=1) <= cms.tables
         offset = (hash(item, cms.seeds[i]) % cms.tablesize) + 1
@@ -114,7 +97,8 @@ function add!(cms::CountMinSketch, item, count::Int)
             @inbounds cms.sketch[offset, i] += count
         catch
             # clamp overflow to typemin/typemax(eltype(sketch))
-            @inbounds cms.sketch[offset, i] = count > 0 ? cms.tpmax : cms.tpmin
+            @inbounds cms.sketch[offset, i] = ifelse(count > 0, cms.tpmax,
+                                                     cms.tpmin)
         end
     end
 end
@@ -131,7 +115,7 @@ Arguments
 * `cms`: A count-min sketch
 * `item`: any hashable item
 """
-function getindex(cms::CountMinSketch, item)
+function Base.getindex(cms::CountMinSketch, item)
     minval = cms.tpmax
     i::UInt = 0
     while (i+=1) <= cms.tables
@@ -153,7 +137,7 @@ Arguments
 * `cms`: A count-min sketch
 * `item`: any hashable item
 """
-function push!(cms::CountMinSketch, item)
+function Base.push!(cms::CountMinSketch, item)
     add!(cms, item, 1)
 end
 
@@ -168,7 +152,7 @@ Arguments
 * `cms`: A count-min sketch
 * `item`: any hashable item
 """
-function pop!(cms::CountMinSketch, item)
+function Base.pop!(cms::CountMinSketch, item)
     add!(cms, item, -1)
 end
 
@@ -178,7 +162,7 @@ Test for presence of an item in a CountMinSketch.
 NB: This function never returns a false negative, but has a very low probablity
     of returning a false positive due to collision.
 """
-function haskey(cms::CountMinSketch, item)
+function Base.haskey(cms::CountMinSketch, item)
     return cms[item] > 0
 end
 
@@ -186,7 +170,7 @@ end
 """
 Element type of a CountMinSketch
 """
-function eltype(cms::CountMinSketch)
+function Base.eltype(cms::CountMinSketch)
     return eltype(cms.sketch)
 end
 
@@ -194,7 +178,7 @@ end
 """
 Shape of a CountMinSketch, i.e. (number of tables, tablesize).
 """
-function size(cms::CountMinSketch)
+function Base.size(cms::CountMinSketch)
     # It's the reverse as we store the sketch in table-major order (which in
     # Julia means transposed (tables are columns), as Julia is Column major).
     return reverse(size(cms.sketch))
