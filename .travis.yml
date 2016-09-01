@@ -9,7 +9,9 @@ julia:
 
 matrix:
   include:
-    - branch: master
+    - branches:
+        only:
+          master
       os: osx
       julia: 0.5
   allow_failures:
