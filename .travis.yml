@@ -1,21 +1,16 @@
 language: julia
 
-os:
-  - linux
-  - osx
-
-julia:
-  - 0.5
-  - nightly
-
 matrix:
   include:
     - branch: master
       os: osx
       julia: 0.5
     - os: linux
+      julia: 0.5
+    - os: linux
+      julia: nightly
   allow_failures:
-    - julia: nightly  
+    - julia: nightly
   fast_finish: true
 
 sudo:
