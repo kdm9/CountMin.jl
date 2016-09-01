@@ -20,4 +20,3 @@ install:
 
 script:
   - julia -e 'Pkg.test("CountMin")'
-  - julia misc/cms.jl
