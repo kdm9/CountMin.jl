@@ -1,5 +1,6 @@
 using DataStructures
 using CountMin
+import CountMin: add!
 
 
 N = 100
